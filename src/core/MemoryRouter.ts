@@ -9,6 +9,10 @@ interface Env {
   AI: Ai;
 }
 
+interface Ai {
+  run(model: string, options: { text: string[] }): Promise<{ data: number[][] }>;
+}
+
 export class MemoryRouter extends DurableObject<Env> {
   private layers: Map<string, MemoryEntry[]> = new Map();
 
@@ -27,25 +31,25 @@ export class MemoryRouter extends DurableObject<Env> {
     });
   }
 
-  async remember(entry: Omit<MemoryEntry, 'id' | 'createdAt' | 'accessedAt' | 'accessCount'>): Promise<string> {
+  async remember(input: Omit<MemoryEntry, 'id' | 'createdAt' | 'accessedAt' | 'accessCount'>): Promise<string> {
     const id = crypto.randomUUID();
     const now = Date.now();
     
-    const entry: MemoryEntry = {
-      ...entry,
+    const newEntry: MemoryEntry = {
+      ...input,
       id,
       createdAt: Date.now(),
-      accessedAt: Date.now(),
+      accessedAt: now,
       accessCount: 0
     };
 
-    const layerEntries = this.layers.get(entry.layer) || [];
-    layerEntries.push(entry);
-    this.layers.set(entry.layer, layerEntries);
+    const layerEntries = this.layers.get(input.layer) || [];
+    layerEntries.push(newEntry);
+    this.layers.set(input.layer, layerEntries);
 
     // Generate embedding if needed
-    if (entry.layer === 'L3' || entry.layer === 'L2') {
-      entry.embedding = await this.generateEmbedding(entry.content);
+    if (input.layer === 'L3' || input.layer === 'L2') {
+      newEntry.embedding = await this.generateEmbedding(input.content);
     }
 
     await this.persist();
@@ -54,42 +58,51 @@ export class MemoryRouter extends DurableObject<Env> {
 
   async recall(query: MemoryQuery): Promise<MemoryResult[]> {
     const layers = query.layers || ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7'];
-    let results: any[] = [];
+    let results: MemoryResult[] = [];
 
     for (const layer of layers) {
       const entries = this.layers.get(layer) || [];
-      let layerResults: any[] = [];
 
-      if ((layer === 'L2' || layer === 'L3') && this.layers.get(layer)!.length > 0) {
+      if ((layer === 'L2' || layer === 'L3') && entries.length > 0) {
         // Vector search for L2, L3
         const queryEmbedding = await this.generateEmbedding(query.query);
-        const layerEntries = this.layers.get(layer) || [];
-        const layerResults = layerEntries
-          .filter(e => e.embedding)
+        const filtered = entries.filter((e): e is MemoryEntry & { embedding: number[] } => !!e.embedding);
+        const vectorResults = filtered
           .map(e => ({
             ...e,
             similarity: this.cosineSimilarity(queryEmbedding, e.embedding!)
           }))
           .sort((a, b) => (b.similarity || 0) - (a.similarity || 0));
-      } else {
-        // Text search for other layers
-        const layerEntries = this.layers.get(layer) || [];
-        const layerResults = layerEntries
-          .filter(e => e.content.toLowerCase().includes(query.query.toLowerCase()))
-          .sort((a, b) => b.accessedAt - a.accessedAt);
+
+        let filteredResults = vectorResults;
+        if (query.minConfidence) {
+          filteredResults = filteredResults.filter(e => e.metadata.confidence >= (query.minConfidence || 0));
+        }
+        if (query.tags?.length) {
+          filteredResults = filteredResults.filter(e => 
+            query.tags!.some(t => e.metadata.tags.includes(t))
+          );
+        }
+        results.push(...filteredResults.slice(0, query.limit || 10));
+        continue;
       }
 
+      // Text search for other layers
+      let textResults = entries
+        .filter(e => e.content.toLowerCase().includes(query.query.toLowerCase()))
+        .sort((a, b) => b.accessedAt - a.accessedAt);
+
       if (query.minConfidence) {
-        layerResults = layerResults.filter(e => e.metadata.confidence >= (query.minConfidence || 0));
+        textResults = textResults.filter(e => e.metadata.confidence >= (query.minConfidence || 0));
       }
 
       if (query.tags?.length) {
-        layerResults = layerResults.filter(e => 
+        textResults = textResults.filter(e => 
           query.tags!.some(t => e.metadata.tags.includes(t))
         );
       }
 
-      results.push(...layerResults.slice(0, query.limit || 10));
+      results.push(...textResults.slice(0, query.limit || 10));
     }
 
     // Update access stats
@@ -108,7 +121,9 @@ export class MemoryRouter extends DurableObject<Env> {
     
     if (entryIndex === -1) throw new Error('Entry not found');
 
-    const [entry] = fromEntries.splice(entryIndex, 1);
+    const removed = fromEntries.splice(entryIndex, 1);
+    if (removed.length === 0) throw new Error('Entry not found after splice');
+    const entry = removed[0]!;
     entry.layer = toLayer as any;
     
     const toEntries = this.layers.get(toLayer) || [];
@@ -121,12 +136,15 @@ export class MemoryRouter extends DurableObject<Env> {
     for (const [layer, entries] of this.layers) {
       const index = entries.findIndex(e => e.id === entryId);
       if (index !== -1) {
-        const [entry] = entries.splice(index, 1);
-        entry.layer = 'L7';
-        const l7 = this.layers.get('L7') || [];
-        l7.push(entry);
-        await this.persist();
-        return;
+        const removed = entries.splice(index, 1);
+        if (removed.length > 0) {
+          const entry = removed[0]!;
+          entry.layer = 'L7';
+          const l7 = this.layers.get('L7') || [];
+          l7.push(entry);
+          await this.persist();
+          return;
+        }
       }
     }
   }
@@ -138,17 +156,22 @@ export class MemoryRouter extends DurableObject<Env> {
   private async generateEmbedding(text: string): Promise<number[]> {
     const result = await this.env.AI.run('@cf/baai/bge-base-en-v1.5', {
       text: [text]
-    }) as { data: number[][] };
-    return result.data[0];
+    }) as { data?: number[][] };
+    return result.data?.[0] ?? [];
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {
+    if (a.length === 0 || b.length === 0) return 0;
     let dot = 0, normA = 0, normB = 0;
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
+    const len = Math.min(a.length, b.length);
+    for (let i = 0; i < len; i++) {
+      const ai = a[i]!;
+      const bi = b[i]!;
+      dot += ai * bi;
+      normA += ai * ai;
+      normB += bi * bi;
     }
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+    const denom = Math.sqrt(normA) * Math.sqrt(normB);
+    return denom === 0 ? 0 : dot / denom;
   }
 }
