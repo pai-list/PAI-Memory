@@ -117,8 +117,14 @@ jobs:
       - name: Check security results
         run: |
           FAILED=0
+          declare -A RESULTS=(
+            [codeql]="${{ needs.codeql.result }}"
+            [osv-scanner]="${{ needs.osv-scanner.result }}"
+            [secret-scan]="${{ needs.secret-scan.result }}"
+            [supply-chain]="${{ needs['supply-chain'].result }}"
+          )
           for job in codeql osv-scanner secret-scan supply-chain; do
-            RESULT="${{ needs.$job.result }}"
+            RESULT="${RESULTS[$job]}"
             if [[ "$RESULT" == "failure" ]]; then
               echo "❌ $job: $RESULT"
               FAILED=1
