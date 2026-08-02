@@ -168,19 +168,20 @@ export class ConflictResolver {
       const tsDiff = b.timestamp - a.timestamp;
       if (tsDiff !== 0) return tsDiff;
 
-      // Tiebreaker: lexicographic comparison of JSON-serialized value
-      // This guarantees deterministic outcomes regardless of engine or locale
+      // Tiebreaker: lexicographic comparison of JSON-serialized value,
+      // greatest wins. This guarantees deterministic outcomes regardless
+      // of engine or locale.
       const valA = JSON.stringify(a.value);
       const valB = JSON.stringify(b.value);
-      if (valA < valB) return -1;
-      if (valA > valB) return 1;
+      if (valA > valB) return -1;
+      if (valA < valB) return 1;
       return 0;
     });
 
     const winner = sorted[0];
 
     // Update per-key conflict stats
-    this.updateStats(key, winner, candidates.length);
+    this.updateStats(key, winner, candidates);
 
     return winner;
   }
@@ -278,17 +279,26 @@ export class ConflictResolver {
 
   // ── Private ──
 
-  /** Update per-key conflict resolution statistics */
-  private updateStats(key: string, winner: FactRecord, candidateCount: number): void {
+  /** Update per-key conflict resolution statistics across the full candidate set. */
+  private updateStats(key: string, winner: FactRecord, candidates: FactRecord[]): void {
     const existing = this.stats.get(key);
     const tracked = this.registry.get(key);
     const trackedWin = tracked !== undefined && tracked.timestamp === winner.timestamp;
 
+    // Span the earliest/latest across ALL candidates (not just the winner),
+    // so stats reflect the true time range of facts seen for this key.
+    let earliest = winner.timestamp;
+    let latest = winner.timestamp;
+    for (const c of candidates) {
+      if (c.timestamp < earliest) earliest = c.timestamp;
+      if (c.timestamp > latest) latest = c.timestamp;
+    }
+
     this.stats.set(key, {
       totalConflicts: (existing?.totalConflicts ?? 0) + 1,
       trackedWins: (existing?.trackedWins ?? 0) + (trackedWin ? 1 : 0),
-      earliest: existing ? Math.min(existing.earliest, winner.timestamp) : winner.timestamp,
-      latest: existing ? Math.max(existing.latest, winner.timestamp) : winner.timestamp,
+      earliest: existing ? Math.min(existing.earliest, earliest) : earliest,
+      latest: existing ? Math.max(existing.latest, latest) : latest,
     });
   }
 }

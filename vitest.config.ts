@@ -41,7 +41,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@pai/memory': resolve(__dirname, 'src')
-    }
+      '@pai/memory': resolve(__dirname, 'src'),
+      'cloudflare:workers': resolve(__dirname, 'tests/cloudflare-workers-stub.ts'),
+    },
   }
 });

@@ -162,15 +162,15 @@ describe("ConflictResolver.resolve()", () => {
 
   it("tiebreaker: lexicographic comparison of serialized values", () => {
     const r = new ConflictResolver();
-    // Same timestamp, JSON.stringify comparison decides
+    // Same timestamp, JSON.stringify comparison decides (greatest wins)
     const candidates: FactRecord[] = [
       { key: "tie2", value: { z: 1 }, timestamp: 500 },
       { key: "tie2", value: { a: 2 }, timestamp: 500 },
     ];
     // JSON.stringify({z:1}) = '{"z":1}', JSON.stringify({a:2}) = '{"a":2}'
-    // '{"a":2}' < '{"z":1}' lexicographically → {a:2} wins
+    // '{"z":1}' > '{"a":2}' lexicographically → {z:1} wins (greatest)
     const winner = r.resolve("tie2", candidates);
-    expect(winner.value).toEqual({ a: 2 });
+    expect(winner.value).toEqual({ z: 1 });
   });
 
   it("deterministic across multiple calls with same candidates", () => {
