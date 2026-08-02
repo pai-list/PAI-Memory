@@ -392,6 +392,37 @@ The L3 "big one" ratified NOT to be a fork of any existing HNSW — it is re-der
 Rust crates used only as compile-time evidence. L3's new monolithic WASM can be a Zed or
 Rust module adding ~1-2 MiB Worker size (10 MiB budget) — fine.
 
+**D7 — Zero-cost substrate mapped 1:1 onto Cloudflare primitives (research-backed, cut 2026-08-02).**
+Reference architecture: here-build genres like here.now (publish + Drive + versioning +
+scoped tokens) run entirely on Cloudflare free primitives — presigned R2 uploads, R2 object
+versioning as "history", KV/DO-SQLite for identity/claims, Workers static routes. PAI-Memory
+is the same architecture by construction (D1/D2/D6 already chose it). Everything below is
+Free-plan ($0/mo) for our scale:
+
+| Primitive | Cloudflare FREE cap (2026, re-verified) | PAI-Memory use |
+|---|---|---|
+| Worker requests | 100,000/day | L1 in-isolate, thin API gate |
+| Worker CPU | 10 ms/request (free) | **hard gate → must NOT host L3 build/encode here** |
+| Durable Object | 100K req/day, ~13,000 GiB-s/day, **5 Mi written/day, 5 GiB stored, SQLite free 5 GiB** | L2/L3/L4 hot state + heavy-kernel home (DO has own CPU budget) |
+| R2 | 10 GiB‑storage/mo, 1M Class-A, 10M Class-B ops, **$0 egress** | L7 archive + bitemporal versions, L5 hash-chain, Drive |
+| R2 SQL (2025-26) | query Parquet server-side | L7 read path (no compute engine) |
+| KV | 1 GiB, 100K reads/1K writes | ephemeral claims, TTL routing |
+| D1 | 5 GiB, 5M/100K rows r/w | analytics elastic, spare |
+| Queues | 10K ops/day | L6 handoff |
+| Workers AI | free tier | embeddings (L2 f32/INT8) |
+| Static Assets | 20K files, 25 MiB/file | `agent.json` discovery |
+
+**The "CPU belongs in a DO" rule** (critical for L1/L3): Workers Free is 10 ms/request —
+HNSW build, int8/Matryoshka embedding, Parquet encode all blow that. Those kernels run
+INSIDE a Durable Object (its own 5-MiB-write, 13 K grups/day CPU envelope), the Worker
+stays a thin gate. Free-tier caps become runtime-enforced construction budgets (D2), not
+hopscotch — budgets surface exactly the caps.
+
+**Cost honesty (Sidq/muraqaba):** "zero" is true inside daily caps (~100K writes/day, 5 GiB).
+Past cap = tiers (~$5-20/mo) — design so a single tenant's memory stays inside caps by
+construction; never ship a silent unbounded write path. R2 = the only unbounded-feeling
+primitive: $0 egress, storage ~$0.015/GiB-mo — mirrors here.now's own pricing shape.
+
 ---
 
 ## 13. Execution Contract (per the reality check)
