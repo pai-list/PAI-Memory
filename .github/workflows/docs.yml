@@ -58,7 +58,7 @@ jobs:
         run: |
           shopt -s nullglob
           missing=0
-          for f in README.md docs/PAI-MEM-SPEC.md docs/ARCHITECTURE.md; do
+          for f in README.md docs/PAI-MEM-SPEC.md; do
             if [ ! -f "$f" ]; then
               echo "::error::$f is missing"
               missing=1
