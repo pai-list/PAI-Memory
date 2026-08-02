@@ -1,6 +1,5 @@
 name: Gemini Code Review
-
-on:
+'on':
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -52,18 +51,18 @@ jobs:
           Focus on: security issues, performance problems, code quality, and best practices.
 
           Return JSON with this structure:
-          {{
+          {
             "findings": [
-              {{
+              {
                 "severity": "critical|high|medium|low",
                 "file": "path/to/file",
                 "line": 123,
                 "issue": "Description of the issue",
                 "suggestion": "How to fix it"
-              }}
+              }
             ],
             "summary": "Brief overall assessment"
-          }}
+          }
 
           Diff:
           {diff_content[:8000]}
@@ -109,9 +108,9 @@ jobs:
 
           FINDINGS=$(cat /tmp/gemini-findings.json)
           CRITICAL=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='critical']))" 2>/dev/null || echo 0)
-          HIGH=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='high']))" 2>/dev/null || echo 0)
-          MEDIUM=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='medium']))" 2>/dev/null || echo 0)
-          LOW=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='low']))" 2>/dev/null || echo 0)
+          HIGH=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='high'))" 2>/dev/null || echo 0)
+          MEDIUM=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='medium'))" 2>/dev/null || echo 0)
+          LOW=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='low'))" 2>/dev/null || echo 0)
           SUMMARY=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('summary', 'No summary'))" 2>/dev/null || echo "")
 
           BODY="## 🤖 PAI CI Intelligence: Gemini Review
