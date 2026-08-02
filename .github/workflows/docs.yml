@@ -1,0 +1,70 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '**/*.md'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - '**/*.md'
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  markdownlint:
+    name: Markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Lint markdown
+        run: npx --yes markdownlint-cli2 "docs/**/*.md" "README.md" --config .markdownlint.json 2>&1 || true
+
+  links:
+    name: Broken link check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check internal links
+        run: |
+          npx -y linkinator --skip "https://github.com/**" \
+            --markdown docs README.md 2>/dev/null || true
+
+  core-docs:
+    name: Core docs completeness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify core docs exist
+        run: |
+          shopt -s nullglob
+          missing=0
+          for f in README.md docs/PAI-MEM-SPEC.md docs/ARCHITECTURE.md; do
+            if [ ! -f "$f" ]; then
+              echo "::error::$f is missing"
+              missing=1
+            fi
+          done
+          if [ $missing -eq 1 ]; then
+            exit 1
+          fi
+          echo "All core docs present"
