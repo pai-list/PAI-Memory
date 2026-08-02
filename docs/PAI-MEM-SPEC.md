@@ -364,6 +364,34 @@ interface ForgetRequest {
 - Internal codename: **Momerino** (team-only; NEVER user-facing).
 - Package: `@pai/memory` (npm) · `pai-memory` (crate) · CLI `pai memory store|recall`.
 
+**D6 — Per-layer runtime & implementation language (research-backed, cut 2026-08-02).**
+The answer to "does the language matter?" is **yes, but only under a measurable workload
+profile**: WASM/Rust wins when an operation is (a) compute-heavy AND (b) batched enough that
+the JS↔WASM boundary is crossed rarely. For fine-grained, frequent, small ops WASM loses to
+plain JS (`Rust-WASM JSON parser beaten by TypeScript by 25% — case study, 2026`; multiple
+2025-2026 replications: "treat WASM as an RPC kernel with many fine-grained calls and it
+breaks down"). Workers specifics: single-threaded, **no WASM threads**, SIMD yes, WebCrypto
+is native (hardware-backed — JS is the faster crypto host). Storage bedrock: **SQLite-in-DO ~100x
+faster bulk-write than D1** (co-located vs over-the-network), so hot layers are DO-SQLite.
+
+Rule — the **boundary rule**: one monolithic WASM module per *topology*, called rarely with
+batch data, never per-entry. JS orchestrates topology/lifecycle; WASM does raw math and
+heavy parse/serialize.
+
+| Layer | Language | Rationale (research, cut 2026-08-02) |
+|---|---|---|
+| L1 drain ring | TypeScript (native array drain / LRU) | Same-isolate hot loop, <1ms target, per-op touches; WASM would re-cross the boundary per entry — the 25%-slower case. No change. |
+| L2 episodic chain | TS + DO-SQLite (SQLite-in-DO) | Append-heavy, low-polish; DO SQLite co-located ~100x D1 for bulk writes (meas., Chimame 2025-05). |
+| L3 fact graph + HNSW | Rust→WASM SIMD kernel; TS glue | **The one layer where language is decisive.** HNSW traversal + int8/Matryoshka distances are SIMD-exact: WASM SIMD gives 2-15x vs scalar JS and eval distances in a single batched `query()` boundary crossing. Kill-rule: measure flat-SIMD vs HNSW at our scale; at low <100k and <512-dim sometimes flat exists (unilatervect/unuseddim flat > HNSW at 1536-dim. VecLite 2026) — pick HNSW only when it measurably wins. |
+| L4 call-graph / AST | Rust/WASM (`tree-sitter` web) / TS rest | tree-sitter ships WOMB asm + `Language.loadFrom(WebAssembly.Module)` — canonical, proven pattern. But binding third-party wasm inside a Worker is torn; prefer a **dedicated sidecar Worker via RPC** when dield. |
+| L5 trust hash-chain | TS + WebCrypto (subtle) | Crypto in JS V8 is native —WebCrypto `.subtle` is FIPS-ciphered hashing, no WASM needed; HASM or Rust.SPID loses to native HMAC (deck reverse). Keep TS. |
+| L6 shared/gossip | TS + DO/WebSockets bridge | Network-/protocol-bound, not compute-bound; language-neutral. Energy ledger arithmetic in TS (`v = 0x clamp` domain). |
+| L7 archive (bitemporal) | Rust/WASM (parquet-wasm / Arrow) writer + R2 SQL indexing; TS envelope | Parquet encoding is a batch columnar task — perfect WASM (high fidelity, a proven wasm module). R2SQL (`SELECT` directly on Parquet, 2025-26) = read path needs no compute engine. |
+
+The L3 "big one" ratified NOT to be a fork of any existing HNSW — it is re-derived (per §9),
+Rust crates used only as compile-time evidence. L3's new monolithic WASM can be a Zed or
+Rust module adding ~1-2 MiB Worker size (10 MiB budget) — fine.
+
 ---
 
 ## 13. Execution Contract (per the reality check)
@@ -382,3 +410,5 @@ Research is strong; execution must now catch up. Salient rules:
 ---
 
 *PAI-MEM — codename Momerino (internal). Spec v0.2. Ratified 2026-08-02.**
+
+*D6 ratified 2026-08-02 (runtime & implementation language per layer).*
