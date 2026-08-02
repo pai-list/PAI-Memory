@@ -1,5 +1,5 @@
 name: Reusable Node/TypeScript CI
-on:
+'on':
   workflow_call:
     inputs:
       turbo-targets:
