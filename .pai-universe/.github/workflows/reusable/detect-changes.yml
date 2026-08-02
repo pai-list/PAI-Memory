@@ -1,5 +1,4 @@
 name: "Detect Changes"
-description: "Classify changed files into CI lanes for PAI universe repos"
 on:
   workflow_call:
     inputs:

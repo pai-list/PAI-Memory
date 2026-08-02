@@ -1,5 +1,4 @@
 name: Reusable Node/TypeScript CI
-description: Universal CI for PAI Node/TS repos (monorepo or single package)
 on:
   workflow_call:
     inputs:

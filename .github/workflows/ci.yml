@@ -130,8 +130,16 @@ jobs:
       - name: Check results
         run: |
           FAILED=0
+          declare -A RESULTS=(
+            [tests]="${{ needs.tests.result }}"
+            [typecheck]="${{ needs.typecheck.result }}"
+            [lint]="${{ needs.lint.result }}"
+            [docs]="${{ needs.docs.result }}"
+            [security-scan]="${{ needs.security-scan.result }}"
+            [dependency-audit]="${{ needs.dependency-audit.result }}"
+          )
           for job in tests typecheck lint docs security-scan dependency-audit; do
-            RESULT="${{ needs.$job.result }}"
+            RESULT="${RESULTS[$job]}"
             if [[ "$RESULT" == "failure" || "$RESULT" == "cancelled" ]]; then
               echo "❌ $job: $RESULT"; FAILED=1
             elif [[ "$RESULT" == "success" ]]; then

@@ -1,5 +1,4 @@
 name: Reusable Security Scan
-description: Security scanning for PAI repos (CodeQL, OSV, TruffleHog, Supply Chain)
 on:
   workflow_call:
     inputs:
