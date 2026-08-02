@@ -1,192 +1,109 @@
 # PAI-Memory — 7-Layer Agent Memory
 
-Persistent. Verifiable. Shared. The memory layer for the PAI ecosystem.
+**Persistent. Verifiable. Shared.** The memory layer for the PAI ecosystem.
 
-## Architecture
+> **Honest Status (2026-08-02):** L1 (Working Memory) + L2 (Episodic Chain) implemented as in-memory structures. L2 DO-SQLite Adapter in progress. Full 7-layer spec ratified in `docs/PAI-MEM-SPEC.md`. Zero external providers — Cloudflare-native only (D7 ratified).
 
-```
-pai-list/PAI-Memory/
-├── src/
-│   ├── layers/            # 7 memory layers
-│   │   ├── L1-hot-cache.ts        # sqlite-vec, sub-ms, current session
-│   │   ├── L2-warm-session.ts     # Ghost/TigerData, 10GB pgvector
-│   │   ├── L3-facts-knowledge.ts  # Neon pgvector, 0.5GB SQL+vector
-│   │   ├── L4-code-memory.ts      # Qdrant local, symbol/file filtering
-│   │   ├── L5-trust-chain.ts      # Sigstore/Rekor, immutable audit
-│   │   ├── L6-edge-sync.ts        # Firestore, real-time + offline
-│   │   └── L7-cold-archive.ts     # R2 + Parquet, compliance/forensics
-│   ├── core/              # Core memory system
-│   │   ├── memory-router.ts       # Layer routing & promotion
-│   │   ├── embedding.ts           # Embedding generation & search
-│   │   ├── promotion.ts           # Cross-layer promotion rules
-│   │   ├── retrieval.ts           # Multi-layer retrieval
-│   │   └── serialization.ts       # Parquet/Arrow serialization
-│   ├── integration/       # System integrations
-│   │   ├── adp.ts                 # ADP agent discovery → memory
-│   │   ├── axiomid.ts             # AxiomID TrustChain anchoring
-│   │   ├── workspace.ts           # Global workspace memory pool
-│   │   └── mcp.ts                 # MCP tool memory
-│   └── utils/             # Utilities
-│       ├── hashing.ts
-│       ├── compression.ts
-│       └── validation.ts
-│
-├── templates/           # Memory configurations
-│   ├── agent-personal/
-│   ├── workspace-shared/
-│   ├── compliance-archive/
-│   └── code-repository/
-│
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   └── e2e/
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── LAYERS.md
-│   ├── INTEGRATION.md
-│   └── DEPLOYMENT.md
-│
-├── examples/
-│   ├── personal-agent/
-│   ├── workspace-team/
-│   ├── codebase-indexing/
-│   └── compliance-audit/
-│
-├── wrangler.jsonc
-├── package.json
-├── tsconfig.json
-├── vitest.config.ts
-└── README.md
-```
+---
 
-## The 7 Layers
+## Current Implementation Status
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    PAI-MEMORY 7-LAYER STACK                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  L1  Hot Cache      sqlite-vec        sub-ms, current session   │
-│  ──────────────────────────────────────────────────────────────  │
-│  L2  Warm Session   Ghost/TigerData   10GB pgvector, no pause   │
-│  ──────────────────────────────────────────────────────────────  │
-│  L3  Facts/Knowl.   Neon pgvector     0.5GB SQL + vector        │
-│  ──────────────────────────────────────────────────────────────  │
-│  L4  Code Memory    Qdrant local       symbol/file/lang filter   │
-│  ──────────────────────────────────────────────────────────────  │
-│  L5  Trust Chain    Sigstore/Rekor    immutable audit trail      │
-│  ──────────────────────────────────────────────────────────────  │
-│  L6  Edge Sync      Firestore         real-time + offline        │
-│  ──────────────────────────────────────────────────────────────  │
-│  L7  Cold Archive   R2 + Parquet      compliance, forensics      │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Layer | Name | Status | Implementation |
+|-------|------|--------|----------------|
+| **L1** | Working Memory | ✅ **Done** | In-memory drain ring, 8 pinned slots, 256KB cap, LRU eviction, overflow → L2 |
+| **L2** | Episodic Chain | ✅ **In-Memory Done** | Chronological chain, power-law decay (β=1.2), 1MiB soft / 10MiB hard budget, pins survive eviction |
+| **L2** | DO-SQLite Adapter | 🔄 **In Progress** | Durable Object + SQLite persistence, D2 budgets enforced |
+| **L3** | Facts / Semantic | ⏳ **Planned** | WASM-SIMD HNSW + Matryoshka + ValidityWindow (D6: Rust→WASM) |
+| **L4** | Code / Procedural | ⏳ **Planned** | tree-sitter WASM sidecar, fork/snapshot model |
+| **L5** | Trust / Audit | ⏳ **Planned** | TrustChain hash-chain + Sigstore/Rekor |
+| **L6** | Shared / Edge | ⏳ **Planned** | DO gossip + energy attenuation |
+| **L7** | Cold / Archive | ⏳ **Planned** | Parquet-wasm → R2, R2 SQL reads |
 
-## Layer Details
+**Spec:** `docs/PAI-MEM-SPEC.md` (v0.2, ratified 2026-08-02, D1–D7 binding)
 
-### L1 — Hot Cache (sqlite-vec)
-- **Purpose**: Sub-millisecond recall for current session
-- **Storage**: sqlite-vec in Durable Object memory
-- **Capacity**: ~10K vectors, 100MB
-- **TTL**: Session lifetime
-- **Use case**: Current conversation, working context, tool results
+---
 
-### L2 — Warm Session (Ghost/TigerData pgvector)
-- **Purpose**: Recent sessions, no cold-start penalty
-- **Storage**: pgvector on Ghost/TigerData
-- **Capacity**: 10GB, ~1M vectors
-- **TTL**: 30 days
-- **Use case**: Session history, user preferences, learned patterns
+## Implemented: L1 Working Memory (`packages/pai-memory-core/src/l1-working-memory.ts`)
 
-### L3 — Facts & Knowledge (Neon pgvector)
-- **Purpose**: Persistent facts, learned knowledge
-- **Storage**: Neon pgvector (PostgreSQL)
-- **Capacity**: 0.5GB, ~500K vectors
-- **TTL**: Permanent
-- **Use case**: Facts, procedures, domain knowledge, user info
+- **Topology:** Drain ring (bounded ordered capsule) + 8 pinned slots
+- **Capacity:** 256KB hard cap
+- **Eviction:** LRU on drain ring; pinned slots never evicted
+- **Overflow:** Pinned-full → promotes to L2
+- **Tests:** 10 passing (drain ring, pinning, eviction, overflow, capacity)
 
-### L4 — Code Memory (Qdrant local)
-- **Purpose**: Codebase understanding, symbol navigation
-- **Storage**: Qdrant local (Docker)
-- **Capacity**: Project-dependent
-- **Features**: Symbol/file/lang/type filtering, AST-aware chunking
-- **Use case**: Code search, refactoring, architecture understanding
+---
 
-### L5 — Trust Chain (Sigstore/Rekor)
-- **Purpose**: Immutable audit trail for every memory write
-- **Storage**: Sigstore/Rekor transparency log
-- **Features**: Cryptographic proof, tamper-evident, verifiable
-- **Use case**: Compliance, forensics, agent accountability
+## Implemented: L2 Episodic Chain — In-Memory (`packages/pai-memory-core/src/l2-episodic-chain.ts`)
 
-### L6 — Edge Sync (Firestore)
-- **Purpose**: Real-time sync across devices/agents
-- **Storage**: Cloudflare Firestore (or Firebase)
-- **Features**: Offline-first, conflict resolution, presence
-- **Use case**: Multi-device agents, workspace collaboration
+- **Topology:** Chronological chain with temporal adjacency (`nearestBefore`, `slice`)
+- **Decay:** Power-law `ret(t) = t^(−β)`, β=1.2 (episodic), identity β=0.013 (≳64k h half-life)
+- **Family Score (D5.2):** `w1·importance + w2·(1+accesses)^γ·t^(−β) + w3·0.5^((t−last_access)/τ)`
+- **Budgets (D2):** 1 MiB soft / 10 MiB hard ceiling
+- **Pins:** Survive soft overflow (right-of-user)
+- **Overflow:** `L2Overflow[]` returned for promotion to L3 — never silent truncation
+- **Tests:** 17 passing (decay, familyScore, budget enforcement, pin survival, choose/ranking)
 
-### L7 — Cold Archive (R2 + Parquet)
-- **Purpose**: Long-term compliance, forensics, analytics
-- **Storage**: R2 + Apache Parquet
-- **Capacity**: Unlimited, cost-optimized
-- **Features**: Partitioned by time/agent/type, columnar queries
-- **Use case**: Regulatory compliance, historical analysis, training data
+---
 
-## Memory Router
+## In Progress: L2 DO-SQLite Adapter
 
-```
-Query → Router → Layer Selection → Parallel Search → Merge & Rank → Results
-              │
-              ├── L1 (hot) ──→ sub-ms, if recent
-              ├── L2 (warm) ──→ if session-related
-              ├── L3 (facts) ──→ if factual query
-              ├── L4 (code) ──→ if code-related
-              ├── L5 (audit) ──→ if compliance query
-              ├── L6 (sync) ──→ if multi-device
-              └── L7 (archive) ──→ if historical/compliance
-```
+**Goal:** Persist L2 episodic chain to Durable Object + SQLite, enforce D2 budgets, survive restarts.
 
-## Integration
+- Durable Object class with SQLite storage
+- Schema: `entries (id, content, embedding, createdAt, accessCount, pinned, ...)`
+- Budget enforcement: soft=1MiB, hard=10MiB
+- In-memory `L2EpisodicChain` becomes client; DO handles durability
+- Unit tests: persistence, restart recovery, budget enforcement
 
-| System | What It Gets |
-|--------|--------------|
-| **ADP** | Agent sees other agents' shared memory |
-| **AxiomID** | TrustChain anchors every memory write |
-| **Global Workspace** | Pooled memory across agent team |
-| **ACP** | Memory as sellable service on Virtuals |
+---
 
-## Quick Start
+## Zero External Providers (D7 Ratified)
+
+| Layer | Service (Spec) | Current | Target (Cloudflare) |
+|-------|----------------|---------|---------------------|
+| L1 | sqlite-vec → | In-memory | DO memory |
+| L2 | Ghost pgvector → | In-memory | DO-SQLite |
+| L3 | Neon pgvector → | — | DO-SQLite + WASM HNSW |
+| L4 | Qdrant local → | — | DO + tree-sitter WASM sidecar |
+| L5 | Sigstore/Rekor → | trust-gate.ts (stub) | TrustChain + WebCrypto + Sigstore |
+| L6 | Firestore → | — | DO gossip + R2 |
+| L7 | R2 + Parquet → | — | R2 + Parquet-wasm + R2 SQL |
+
+**No external providers used.** All dependencies in `package.json` are only those currently imported by implemented code.
+
+---
+
+## Quick Start (Current)
 
 ```bash
 # Install
-npm install -g @pai/memory
+cd packages/pai-memory-core
+npm install
 
-# Initialize memory for agent
-pai-memory init --agent my-agent --layers L1,L2,L3
+# Run tests
+npm test
 
-# Store memory
-pai-memory remember "User prefers dark mode" --layer L1 --tags preference,ui
+# Typecheck
+npm run typecheck
 
-# Recall
-pai-memory recall "dark mode" --layers L1,L2
-
-# Search code
-pai-memory code-search "authentication" --lang typescript
+# Lint
+npm run lint
 ```
 
-## Deployment (Free Tier)
+---
 
-| Layer | Service | Free Tier |
-|-------|---------|-----------|
-| L1 | Durable Object memory | Workers free |
-| L2 | Ghost pgvector | 10GB free |
-| L3 | Neon pgvector | 0.5GB free |
-| L4 | Qdrant local | Docker on Workers |
-| L5 | Sigstore | Free public |
-| L6 | Firestore | 1GB free |
-| L7 | R2 + Parquet | 10GB free |
+## Architecture Reference
+
+- **Full Spec:** `docs/PAI-MEM-SPEC.md` (v0.2, D1–D7 ratified)
+- **Numerics Contract:** §4 (embedding dims, Matryoshka, sparse/dense hybrid)
+- **Retention Model:** §5 (power-law decay, family score, adaptive budget, rehearsal)
+- **Conflict/Edit Engine:** §6 (bitemporal, max-serial resolution, tiered forget)
+- **Trust-Gate:** §7 (novelty, policy, read-bias)
+- **API Surface:** §8
+- **Implementation Phases:** §11 (P0–P5)
+- **Shura Ratifications:** §12 (D1–D7 binding)
+
+---
 
 ## License
 
@@ -194,4 +111,4 @@ MIT — Free for all agents, all humans, all purposes.
 
 ---
 
-*PAI-Memory by Mohamed Abdelaziz. Part of the PAI ecosystem.*# trigger
+*PAI-Memory by Mohamed Abdelaziz. Part of the PAI ecosystem. Codename: Momerino (internal). Spec v0.2. Ratified 2026-08-02.*

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "pai-memory-l2-do",
+  "main": "src/l2-do-entry.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "L2_SOFT_BUDGET_MB": "1",
+    "L2_HARD_CEILING_MB": "10"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "L2_EPISODIC_DO",
+        "class_name": "L2EpisodicDO"
+      }
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pai-memory-l2",
+      "database_id": "<L2_D1_DATABASE_ID>"
+    }
+  ],
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["L2EpisodicDO"]
+    }
+  ]
+}
