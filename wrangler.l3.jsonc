@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "pai-memory-l3-do",
+  "main": "src/l3-do-entry.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "L3_SOFT_BUDGET_MB": "100",
+    "L3_HARD_CEILING_MB": "500"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "L3_FACTS_DO",
+        "class_name": "L3FactGraphDO"
+      }
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pai-memory-l3",
+      "database_id": "<L3_D1_DATABASE_ID>"
+    }
+  ],
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["L3FactGraphDO"]
+    }
+  ]
+}
