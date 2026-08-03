@@ -18,7 +18,7 @@
  *   - SAGE-style novelty write gate: ADD | NOOP | MERGE (deterministic cosine).
  */
 
-import { MemoryTier } from './types';
+import { MemoryLayer, MemoryTier } from './types';
 
 // ─────────────────────────────────────────────
 // Constants
@@ -56,6 +56,12 @@ export interface Int8Calibration {
 /** INT8 quantized form (L3-warm). */
 export interface Int8Quantization extends Int8Calibration {
   data: Int8Array;
+}
+
+/** DO configuration for L3. */
+export interface L3DOConfig {
+  softBudgetBytes?: number;
+  hardCeilingBytes?: number;
 }
 
 /** JSON-safe INT8 slice carried by L3Overflow (crosses DO/worker boundary). */
@@ -96,6 +102,8 @@ export interface FactRecord {
   lastAccessedAt: number;
   importanceScore: number;
   pinned: boolean; // right-of-user: never silently evicted
+  layer: MemoryLayer;
+  tier: MemoryTier;
 }
 
 /** Overflow object — shaped for M5 (L2→L3 promotion) now (spec §5). */
@@ -472,6 +480,8 @@ export class L3FactGraph {
       lastAccessedAt: stamp,
       importanceScore: input.importanceScore ?? 0,
       pinned: !!input.pinned,
+      layer: MemoryLayer.L3_FACTS,
+      tier: MemoryTier.COOL,
     });
   }
 

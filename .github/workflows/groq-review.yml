@@ -1,4 +1,4 @@
-name: Gemini Code Review
+name: Groq Code Review
 'on':
   pull_request:
     types: [opened, synchronize, reopened]
@@ -8,8 +8,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  gemini-review:
-    name: Gemini AI Review
+  groq-review:
+    name: Groq AI Review (Llama 3.3 70B)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Gemini Review
+      - name: Run Groq Review
         if: steps.diff.outputs.file_count != '0'
         run: |
           python3 << 'PYEOF'
@@ -86,13 +86,13 @@ jobs:
               json_match = text[text.find("{"):text.rfind("}") + 1] if "{" in text else "{}"
               findings = json.loads(json_match)
 
-              with open("/tmp/gemini-findings.json", "w") as f:
+              with open("/tmp/groq-findings.json", "w") as f:
                   json.dump(findings, f, indent=2)
 
               print(f"Found {len(findings.get('findings', []))} issues")
 
           except Exception as e:
-              print(f"❌ Gemini review failed: {e}")
+              print(f"❌ Groq review failed: {e}")
               sys.exit(0)
           PYEOF
         env:
@@ -101,19 +101,19 @@ jobs:
       - name: Post PR Comment
         if: steps.diff.outputs.file_count != '0'
         run: |
-          if [ ! -f /tmp/gemini-findings.json ]; then
+          if [ ! -f /tmp/groq-findings.json ]; then
             echo "No findings to report"
             exit 0
           fi
 
-          FINDINGS=$(cat /tmp/gemini-findings.json)
+          FINDINGS=$(cat /tmp/groq-findings.json)
           CRITICAL=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='critical']))" 2>/dev/null || echo 0)
           HIGH=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='high'))" 2>/dev/null || echo 0)
           MEDIUM=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='medium'))" 2>/dev/null || echo 0)
           LOW=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len([f for f in d.get('findings',[]) if f.get('severity')=='low'))" 2>/dev/null || echo 0)
           SUMMARY=$(echo "$FINDINGS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('summary', 'No summary'))" 2>/dev/null || echo "")
 
-          BODY="## 🤖 PAI CI Intelligence: Gemini Review
+          BODY="## 🤖 PAI CI Intelligence: Groq Review (Llama 3.3 70B)
 
           **Summary**: $SUMMARY
           *Powered by PAI AI Agents*
@@ -129,7 +129,7 @@ jobs:
           <summary>Detailed Findings</summary>
 
           \`\`\`json
-          $(cat /tmp/gemini-findings.json | head -100)
+          $(cat /tmp/groq-findings.json | head -100)
           \`\`\`
 
           </details>"

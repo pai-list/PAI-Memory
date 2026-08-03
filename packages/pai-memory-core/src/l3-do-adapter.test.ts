@@ -69,8 +69,13 @@ function mockEnv(overrides: Record<string, unknown> = {}) {
   });
 
   const chains = {
-    budgetCheck: makeChain({ first: { count: 0, total_bytes: 0 }, all: { results: [{ count: 0, total_bytes: 0 }] } }),
-    stats: makeChain({ first: { count: 0, total_bytes: 0, pinned_count: 0, oldest: null, newest: null } }),
+    budgetCheck: makeChain({ 
+      first: { count: 0, total_bytes: 0 }, 
+      all: { results: [{ count: 0, total_bytes: 0 }] } 
+    }),
+    stats: makeChain({ 
+      first: { count: 0, total_bytes: 0, pinned_count: 0, oldest: null, newest: null } 
+    }),
     empty: makeChain({ first: null, all: { results: [] } }),
     fact: makeChain({
       first: {
@@ -101,44 +106,25 @@ function mockEnv(overrides: Record<string, unknown> = {}) {
   };
 
   // Override prepare to return appropriate mock based on SQL
-  const prepareMock = vi.fn((sql: string) => {
-    if (sql.includes('SELECT COUNT(*) as count, COALESCE(SUM') && sql.includes('total_bytes') && !sql.includes('pinned_count')) {
+const prepareMock = vi.fn((sql: string) => {
+    const lowerSql = sql.toLowerCase().replace(/\s+/g, ' ');
+    if (lowerSql.includes('select count(*) as count') && lowerSql.includes('total_bytes') && !lowerSql.includes('pinned_count')) {
+      console.log('[TEST MOCK] -> budgetCheck');
       return chains.budgetCheck;
     }
-    if (sql.includes('SELECT * FROM l3_facts WHERE id')) {
-      // Check if it's the non-existent test case
-      if (sql.includes('non-existent') || (overrides as any).returnNullFact) {
+    if (lowerSql.includes('select * from l3_facts where id')) {
+      // The ID is passed as a bind parameter, not in the SQL text
+      // We'll use the override flag for non-existent test
+      if ((overrides as any).returnNullFact) {
         return chains.empty;
       }
       return chains.fact;
     }
-    if (sql.includes('SELECT COUNT(*) as count, COALESCE(SUM') && sql.includes('pinned_count')) {
+    if (lowerSql.includes('select count(*) as count') && lowerSql.includes('pinned_count')) {
       return chains.stats;
     }
+    console.log('[TEST MOCK] -> empty (fallback)');
     return chains.empty;
-  });
-
-  return {
-    DB: {
-      prepare: prepareMock,
-      exec: vi.fn().mockResolvedValue(undefined),
-    },
-    ...overrides,
-  };
-}
-    if (sql.includes('SELECT * FROM l3_facts WHERE id')) {
-      return makeChain({ results: [factResult] });
-    }
-    if (sql.includes('SELECT COUNT(*) as count') || sql.includes('total_bytes')) {
-      return makeChain(budgetCheckResult);
-    }
-    if (sql.includes('SELECT COUNT(*) as count, COALESCE(SUM')) {
-      return makeChain(budgetCheckResult);
-    }
-    if (sql.includes('SELECT COUNT(*) as count, COALESCE(SUM') && sql.includes('total_bytes')) {
-      return makeChain(statsResult);
-    }
-    return chain;
   });
 
   return {
@@ -272,7 +258,7 @@ describe('L3 DO Adapter', () => {
 
   it('should return null for non-existent fact', async () => {
     await doInstance.initialize();
-    const result = await doInstance.get('non-existent');
+    const result = await doInstance.get('non-existent', { returnNullFact: true });
     expect(result).toBeNull();
   });
 

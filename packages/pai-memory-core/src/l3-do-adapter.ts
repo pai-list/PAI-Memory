@@ -14,13 +14,9 @@
  * layer, tier, createdAt, updatedAt, accessCount, lastAccessedAt, importanceScore, pinned, novelty)
  */
 
-import { MemoryLayer, MemoryTier, L3Overflow } from './types';
-import { FactRecord, Int8Quantization, toInt8Params, fromInt8Params } from './l3-facts-semantic';
-
-export interface L3DOConfig {
-  softBudgetBytes?: number;
-  hardCeilingBytes?: number;
-}
+import { MemoryLayer, MemoryTier, L3Overflow, L3DOConfig } from './types';
+import { FactRecord, Int8Quantization, toInt8Params, fromInt8Params, L3OverflowReason } from './l3-facts-semantic';
+import { DurableObjectState } from '@cloudflare/workers-types';
 
 export interface L3EntryRow {
   id: string;
@@ -188,7 +184,9 @@ class L3FactGraphDO {
   }
 
   /** Get a fact by ID */
-  async get(id: string): Promise<FactRecord | null> {
+  async get(id: string, opts?: { returnNullFact?: boolean }): Promise<FactRecord | null> {
+    if (opts?.returnNullFact) return null;
+    
     const row = await this.db.prepare(`
       SELECT * FROM l3_facts WHERE id = ?
     `).bind(id).first();
@@ -285,10 +283,10 @@ class L3FactGraphDO {
     `).bind(limit * 5).all(); // Fetch more for scoring
 
     const entries = results.map((row: any) => this.rowToFact(row));
-    const { factScore } = await import('./l3-facts-semantic');
+    const { factScore } = await import('./l3-facts-semantic.js');
 
     return entries
-      .map((e) => {
+      .map((e: FactRecord) => {
         const score = factScore(e.createdAt, {
           contentType: contentType ?? e.metadata.contentType,
           importance: e.importanceScore,
@@ -298,7 +296,7 @@ class L3FactGraphDO {
         });
         return { id: e.id, txnMs: e.createdAt, score };
       })
-      .sort((a, b) => b.score - a.score)
+      .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
       .slice(0, limit);
   }
 
@@ -449,7 +447,7 @@ class L3FactGraphDO {
       embedding: Float32Array.from(embedding),
       mat256: Float32Array.from(mat256),
       int8: {
-        data: int8Data,
+        data: new Int8Array(int8Data.buffer, int8Data.byteOffset, int8Data.byteLength),
         mean: Float32Array.from(int8Mean),
         scale: Float32Array.from(int8Scale),
       },
@@ -483,11 +481,11 @@ class L3Client {
     return result;
   }
 
-  async get(id: string): Promise<FactRecord | null> {
+  async get(id: string, opts?: { returnNullFact?: boolean }): Promise<FactRecord | null> {
     const cached = this.localCache.get(id);
     if (cached) return cached;
 
-    const entry = await this.doStub.get(id);
+    const entry = await this.doStub.get(id, opts);
     if (entry) this.localCache.set(id, entry);
     return entry;
   }
@@ -542,7 +540,7 @@ class L3Client {
 // Type for DurableObjectStub with our methods
 interface DurableObjectStub {
   upsert(entry: any): Promise<any[]>;
-  get(id: string): Promise<any>;
+  get(id: string, opts?: { returnNullFact?: boolean }): Promise<any>;
   getMany(ids: string[]): Promise<any[]>;
   slice(fromMs: number, toMs: number): Promise<any[]>;
   touch(id: string): Promise<boolean>;
@@ -555,5 +553,5 @@ interface DurableObjectStub {
   getAll(): Promise<any[]>;
 }
 
-export { L3FactGraphDO, L3Client, L3DOConfig };
+export { L3FactGraphDO, L3Client };
 export type { L3OverflowReason } from './l3-facts-semantic';

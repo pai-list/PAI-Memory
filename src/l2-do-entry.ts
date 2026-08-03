@@ -8,13 +8,13 @@
  * budget enforcement, and restart recovery.
  */
 
-import { L2EpisodicDO, L2Client, L2DOConfig } from './l2-do-adapter';
+import { L2EpisodicDO, L2Client, L2DOConfig } from '../packages/pai-memory-core/src/l2-do-adapter';
 
 // Re-export for external use
-export { L2EpisodicDO, L2Client, L2DOConfig } from './l2-do-adapter';
+export { L2EpisodicDO, L2Client, L2DOConfig } from '../packages/pai-memory-core/src/l2-do-adapter';
 
 // Export types
-export type { L2DOConfig, L2DOState, L2EntryRow } from './l2-do-adapter';
+export type { L2DOConfig, L2DOState, L2EntryRow } from '../packages/pai-memory-core/src/l2-do-adapter';
 
 // Durable Object export
 export default {
