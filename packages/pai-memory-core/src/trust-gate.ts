@@ -17,7 +17,7 @@
  * which achieves 90%+ of MemGate's effect at zero additional cost.
  */
 
-/** Minimal memory item shape — matches mem7's JsMemoryItem */
+/** Minimal memory item shape — matches the native engine's JsMemoryItem */
 export interface MemoryItem {
   id?: string;
   content?: string;
