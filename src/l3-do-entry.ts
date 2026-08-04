@@ -16,7 +16,6 @@ import { L3OverflowReason, FactRecord, Int8Quantization } from '../packages/pai-
 export { L3FactGraphDO, L3Client, L3DOConfig } from '../packages/pai-memory-core/src/l3-do-adapter';
 
 // Export types
-export type { L3DOConfig } from '../packages/pai-memory-core/src/l3-do-adapter';
 export type { L3OverflowReason, FactRecord, Int8Quantization } from '../packages/pai-memory-core/src/l3-facts-semantic';
 
 // Durable Object export
