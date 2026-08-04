@@ -20,7 +20,7 @@
     {
       "binding": "DB",
       "database_name": "pai-memory-l2",
-      "database_id": "<L2_D1_DATABASE_ID>"
+      "database_id": "5c5da39d-91d2-4ff7-b0b6-e0b4278361bc"
     }
   ],
   "migrations": [
