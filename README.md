@@ -55,7 +55,7 @@ chmod 600 .env
 
 Run the deployment script:
 ```bash
-cd /Users/cryptojoker710/Desktop/pai-universe/cloudflare-setup
+cd cloudflare-setup
 ./setup.sh
 ```
 
