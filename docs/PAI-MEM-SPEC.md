@@ -393,11 +393,7 @@ Rust crates used only as compile-time evidence. L3's new monolithic WASM can be 
 Rust module adding ~1-2 MiB Worker size (10 MiB budget) — fine.
 
 **D7 — Zero-cost substrate mapped 1:1 onto Cloudflare primitives (research-backed, cut 2026-08-02).**
-Reference architecture: here-build genres like here.now (publish + Drive + versioning +
-scoped tokens) run entirely on Cloudflare free primitives — presigned R2 uploads, R2 object
-versioning as "history", KV/DO-SQLite for identity/claims, Workers static routes. PAI-Memory
-is the same architecture by construction (D1/D2/D6 already chose it). Everything below is
-Free-plan ($0/mo) for our scale:
+Reference architecture: Cloudflare's native primitives (Workers, Durable Objects, R2, D1, KV, Queues) run entirely on Cloudflare free tier — presigned R2 uploads, R2 object versioning as "history", KV/DO-SQLite for identity/claims, Workers static routes. PAI-Memory is the same architecture by construction (D1/D2/D6 already chose it). Everything below is Free-plan ($0/mo) for our scale:
 
 | Primitive | Cloudflare FREE cap (2026, re-verified) | PAI-Memory use |
 |---|---|---|
@@ -421,7 +417,7 @@ hopscotch — budgets surface exactly the caps.
 **Cost honesty (Sidq/muraqaba):** "zero" is true inside daily caps (~100K writes/day, 5 GiB).
 Past cap = tiers (~$5-20/mo) — design so a single tenant's memory stays inside caps by
 construction; never ship a silent unbounded write path. R2 = the only unbounded-feeling
-primitive: $0 egress, storage ~$0.015/GiB-mo — mirrors here.now's own pricing shape.
+primitive: $0 egress, storage ~$0.015/GiB-mo.
 
 ---
 

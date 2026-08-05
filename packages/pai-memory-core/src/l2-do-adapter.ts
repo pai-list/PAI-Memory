@@ -264,10 +264,10 @@ class L2EpisodicDO {
     `).bind(limit * 5).all(); // Fetch more for scoring
 
     const entries = results.map((row: any) => this.rowToEntry(row));
-    const { familyScore } = await import('./l2-episodic-chain');
+    const { familyScore } = await import('./l2-episodic-chain.js');
 
     return entries
-      .map((e) => {
+      .map((e: any) => {
         const score = familyScore(e.createdAt, {
           contentType: contentType ?? (e.metadata as any)?.type,
           importance: (e.metadata as any)?.confidence ?? 0,
@@ -277,7 +277,7 @@ class L2EpisodicDO {
         });
         return { id: e.id, txnMs: e.createdAt, score };
       })
-      .sort((a, b) => b.score - a.score)
+      .sort((a: { score: number }, b: { score: number }) => b.score - a.score)
       .slice(0, limit);
   }
 
@@ -493,4 +493,4 @@ interface DurableObjectStub {
   getAll(): Promise<any[]>;
 }
 
-export { L2EpisodicDO, L2Client, L2DOConfig, L2DOState, L2EntryRow };
+export { L2EpisodicDO, L2Client };

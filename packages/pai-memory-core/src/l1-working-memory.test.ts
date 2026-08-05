@@ -100,7 +100,7 @@ describe('L1WorkingMemory — Drain Ring', () => {
     expect(mem.isPinned(a.id)).toBe(false);
     // a must not be lost — drain or overflow signal.
     const retained = mem.get(a.id);
-    expect(retained === null || mem.pinned.length <= 2).toBe(true);
+    expect(retained === null || mem.pinnedCount <= 2).toBe(true);
     expect(mem.drainCount + mem.pinnedCount).toBeGreaterThanOrEqual(2);
   });
 

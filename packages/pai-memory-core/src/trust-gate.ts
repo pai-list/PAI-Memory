@@ -100,7 +100,7 @@ function scoreRelevance(memory: MemoryItem, taskType: TaskType): number {
 
   // Content relevance (keyword overlap with task domain)
   const content = memory.content ?? "";
-  const domainWords = DOMAIN_KEYWORDS[taskType] ?? DOMAIN_KEYWORDS.general;
+  const domainWords = DOMAIN_KEYWORDS[taskType] ?? [];
   const matchCount = domainWords.filter((w) => content.toLowerCase().includes(w)).length;
   const keywordScore = Math.min(0.3, matchCount * 0.05);
   score += keywordScore;

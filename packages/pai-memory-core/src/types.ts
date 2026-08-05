@@ -307,3 +307,31 @@ export interface AgentSearchResult {
     layer: MemoryLayer;
   }>;
 }
+
+// ── L2/L3 Overflow types (for cross-layer promotion) ──
+
+export interface L2Overflow {
+  entry: MemoryEntry;
+  reasons: 'budget' | 'hard-cap';
+}
+
+export type L3OverflowReason = 'budget' | 'superseded' | 'expired';
+
+export interface L3Overflow {
+  factKey: string;
+  serial: number;
+  embedding: Float32Array;
+  mat256: Float32Array;
+  int8Params: {
+    data: number[];
+    mean: number[];
+    scale: number[];
+    dim: number;
+  };
+  reason: L3OverflowReason;
+}
+
+export interface L3DOConfig {
+  softBudgetBytes?: number;
+  hardCeilingBytes?: number;
+}

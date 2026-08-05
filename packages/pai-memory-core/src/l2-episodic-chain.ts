@@ -145,7 +145,7 @@ export class L2EpisodicChain {
 
   get(id: string): MemoryEntry | null {
     const i = this.entries.findIndex((e) => e.id === id);
-    return i === -1 ? null : { ...this.entries[i] };
+    return i === -1 ? null : { ...this.entries[i]! };
   }
 
   /** Chronological slice of the chain within [fromTx, toTx]. */
