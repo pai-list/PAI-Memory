@@ -264,7 +264,7 @@ class L2EpisodicDO {
     `).bind(limit * 5).all(); // Fetch more for scoring
 
     const entries = results.map((row: any) => this.rowToEntry(row));
-    const { familyScore } = await import('./l2-episodic-chain');
+    const { familyScore } = await import('./l2-episodic-chain.js');
 
     return entries
       .map((e: any) => {
@@ -494,4 +494,3 @@ interface DurableObjectStub {
 }
 
 export { L2EpisodicDO, L2Client };
-export type { L2DOConfig, L2DOState, L2EntryRow };

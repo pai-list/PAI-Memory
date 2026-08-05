@@ -554,4 +554,5 @@ interface DurableObjectStub {
 }
 
 export { L3FactGraphDO, L3Client };
+export type { L3DOConfig } from './types';
 export type { L3OverflowReason } from './l3-facts-semantic';

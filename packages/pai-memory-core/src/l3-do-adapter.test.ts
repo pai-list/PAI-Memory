@@ -160,6 +160,8 @@ function makeFactRecord(over: Partial<FactRecord> = {}): FactRecord {
     lastAccessedAt: over.lastAccessedAt ?? Date.now(),
     importanceScore: over.importanceScore ?? 0,
     pinned: over.pinned ?? false,
+    layer: over.layer ?? MemoryLayer.L3_FACTS,
+    tier: over.tier ?? MemoryTier.COOL,
   };
 }
 

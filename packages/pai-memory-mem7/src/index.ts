@@ -171,7 +171,7 @@ export class Mem7Adapter {
     if (this.initialized) return;
 
     if (this.config.telemetry) {
-      initTelemetry({ serviceName: "pai-memory-mem7" });
+      initTelemetry(JSON.stringify({ serviceName: "pai-memory-mem7" }));
     }
 
     const mem7Config: Record<string, unknown> = {
@@ -221,7 +221,7 @@ export class Mem7Adapter {
         [{ role: "system", content: "__healthcheck__" }],
         "__probe__"
       );
-      await this.engine.deleteMemory(id);
+      await this.engine.delete(id.results[0]!.id);
       return { healthy: true, latencyMs: Date.now() - start };
     } catch (err) {
       return { healthy: false, latencyMs: Date.now() - start, details: String(err) };
@@ -239,7 +239,8 @@ export class Mem7Adapter {
     const userId = entry.userId;
     const sessionId = entry.sessionId;
 
-    return await this.engine.add(messages, userId, sessionId ?? undefined);
+    const result = await this.engine.add(messages, userId, sessionId ?? undefined);
+    return result.results[0]!.id;
   }
 
   /** Search for relevant memories. */
@@ -247,29 +248,33 @@ export class Mem7Adapter {
     const results = await this.engine.search(
       query.query,
       query.userId ?? "__all__",
+      undefined,
+      undefined,
       query.limit ?? 10,
+      undefined,
+      undefined,
       query.threshold ?? 0.0,
       query.taskType,
     );
 
-    return results.map((r: any) => ({
-      id: r.id ?? r.memory_id ?? "",
-      content: r.content ?? r.text ?? "",
+    return results.memories.map((r) => ({
+      id: r.id ?? "",
+      content: r.text ?? "",
       score: r.score ?? 0,
-      memoryType: r.memory_type,
-      metadata: r.metadata,
-      createdAt: r.created_at,
+      memoryType: r.memoryType,
+      metadata: r.metadata ? JSON.parse(r.metadata) : undefined,
+      createdAt: r.createdAt,
     }));
   }
 
   /** Delete a memory by ID. */
   async delete(id: string): Promise<void> {
-    await this.engine.deleteMemory(id);
+    await this.engine.delete(id);
   }
 
   /** Delete all memories for a user. */
   async clearUser(userId: string): Promise<void> {
-    await this.engine.deleteUser(userId);
+    await this.engine.deleteAll(userId);
   }
 
   // ── Stats ──

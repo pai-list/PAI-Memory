@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { MemoryLayer, MemoryTier } from './types';
 import {
   L3FactGraph,
   FactRecord,
@@ -54,6 +55,8 @@ function makeFact(over: { [k: string]: unknown } = {}, dim = 32): FactRecord {
     lastAccessedAt: (over.lastAccessedAt as number) ?? Date.now(),
     importanceScore: (over.importanceScore as number) ?? 0,
     pinned: (over.pinned as boolean) ?? false,
+    layer: (over.layer as FactRecord['layer']) ?? MemoryLayer.L3_FACTS,
+    tier: (over.tier as FactRecord['tier']) ?? MemoryTier.COOL,
   };
 }
 // Numerics helpers
@@ -68,7 +71,7 @@ describe('L3 numerics', () => {
   it('truncate preserves the first 256 values', () => {
     const v = makeVector(1024, 7);
     const t = truncateMatryoshka(v);
-    for (let i = 0; i < 5; i++) expect(t[i]).toBeCloseTo(v[i], 6);
+    for (let i = 0; i < 5; i++) expect(t[i]!).toBeCloseTo(v[i]!, 6);
   });
 
   it('quantizeInt8 is deterministic (same input → same quantized bytes)', () => {
@@ -256,7 +259,7 @@ describe('L3FactGraph — recall ranking', () => {
     g.upsert(target);
     g.upsert(makeFact({ content: 'unrelated', embedding: makeVector(64, 99) }));
     const res = g.recall(makeVector(64, 5), { limit: 1 });
-    expect(res[0].fact.content).toBe('the answer');
+    expect(res[0]!.fact.content).toBe('the answer');
   });
 
   it('recall applies validity window', () => {

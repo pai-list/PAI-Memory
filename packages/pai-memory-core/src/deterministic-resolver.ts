@@ -178,7 +178,8 @@ export class ConflictResolver {
       return 0;
     });
 
-    const winner = sorted[0];
+    // candidates.length > 0 checked above, so sorted[0] is always defined
+    const winner = sorted[0]!;
 
     // Update per-key conflict stats
     this.updateStats(key, winner, candidates);

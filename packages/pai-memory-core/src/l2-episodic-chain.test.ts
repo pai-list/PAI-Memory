@@ -153,7 +153,7 @@ describe('L2EpisodicChain — budget enforcement (D2)', () => {
 
     const overflow = chain.append(entry({ content: 'd', createdAt: 4000 })); // 4000 > 3000
     expect(overflow.length).toBeGreaterThan(0);
-    expect(overflow[0].entry.id).toBe(a.id); // oldest promoted, not dropped
+    expect(overflow[0]!.entry.id).toBe(a.id); // oldest promoted, not dropped
     expect(chain.get(a.id)).toBeNull();
     expect(chain.get(b.id)).not.toBeNull();
   });
@@ -178,8 +178,8 @@ describe('L2EpisodicChain — budget enforcement (D2)', () => {
     const overflow = chain.append(entry({ content: 'x', createdAt: 2 }));
     // total 2000 > hard 1200 → evict x; anchor pinned survives
     expect(overflow).toHaveLength(1);
-    expect(overflow[0].entry.content).toBe('x');
-    expect(overflow[0].reasons).toBe('hard-cap');
+    expect(overflow[0]!.entry.content).toBe('x');
+    expect(overflow[0]!.reasons).toBe('hard-cap');
     expect(chain.get(pinned.id)?.content).toBe('anchor');
     expect(chain.sizeBytes).toBe(1000); // down under hard ceiling
   });

@@ -218,8 +218,8 @@ export function cosineSim(a: Float32Array, b: Float32Array): number {
   let na = 0;
   let nb = 0;
   for (let i = 0; i < n; i++) {
-    const x = a[i];
-    const y = b[i];
+    const x = a[i]!;
+    const y = b[i]!;
     dot += x * y;
     na += x * x;
     nb += y * y;
@@ -237,8 +237,8 @@ export function cosineSim(a: Float32Array, b: Float32Array): number {
  * Deterministic, no LLM involved.
  */
 export function classifyNovelty(
-  candidate: ReadonlyArray<number>,
-  existing: ReadonlyArray<ReadonlyArray<number>>,
+  candidate: ArrayLike<number>,
+  existing: ReadonlyArray<ArrayLike<number>>,
   opts: { near?: number; merge?: number } = {},
 ): NoveltyClass {
   const near = opts.near ?? 0.92;
@@ -260,7 +260,7 @@ export function classifyNovelty(
 export function truncateMatryoshka(input: Float32Array | readonly number[], dim = L3_MATRYOSHKA_DIM): Float32Array {
   const out = new Float32Array(dim);
   const n = Math.min(dim, input.length);
-  for (let i = 0; i < n; i++) out[i] = input[i];
+  for (let i = 0; i < n; i++) out[i] = input[i]!;
   return out;
 }
 
@@ -274,18 +274,18 @@ export function quantizeInt8(input: Float32Array, calibration?: Int8Calibration)
   const d = input.length;
   let maxAbs = 1;
   for (let i = 0; i < d; i++) {
-    const a = Math.abs(input[i]);
+    const a = Math.abs(input[i]!);
     if (a > maxAbs) maxAbs = a;
   }
   const data = new Int8Array(d);
   const mean = new Float32Array(d);
   const scale = new Float32Array(d);
   for (let i = 0; i < d; i++) {
-    const m = calibration && calibration.mean.length === d ? calibration.mean[i] : 0;
-    const s = calibration && calibration.scale.length === d ? calibration.scale[i] : maxAbs / 127;
+    const m = calibration && calibration.mean.length === d ? calibration.mean[i]! : 0;
+    const s = calibration && calibration.scale.length === d ? calibration.scale[i]! : maxAbs / 127;
     mean[i] = m;
     scale[i] = s === 0 ? 1 : s;
-    data[i] = clampInt8((input[i] - m) / s);
+    data[i] = clampInt8((input[i]! - m) / s);
   }
   return { data, mean, scale };
 }
@@ -294,7 +294,7 @@ export function quantizeInt8(input: Float32Array, calibration?: Int8Calibration)
 export function dequantizeInt8(q: Int8Quantization): Float32Array {
   const out = new Float32Array(q.data.length);
   for (let i = 0; i < q.data.length; i++) {
-    out[i] = q.data[i] * q.scale[i] + q.mean[i];
+    out[i] = q.data[i]! * q.scale[i]! + q.mean[i]!;
   }
   return out;
 }
@@ -320,8 +320,8 @@ export function flatMatmul(
     let na = 0;
     let nb = 0;
     for (let k = 0; k < dim; k++) {
-      const x = table[base + k];
-      const y = query[k];
+      const x = table[base + k]!;
+      const y = query[k]!;
       dot += x * y;
       na += x * x;
       nb += y * y;

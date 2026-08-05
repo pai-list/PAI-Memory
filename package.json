@@ -73,6 +73,7 @@
     "@typescript-eslint/eslint-plugin": "^8.7.0",
     "@typescript-eslint/parser": "^8.7.0",
     "tsx": "^4.19.0",
-    "typedoc": "^0.27.0"
+    "typedoc": "^0.27.0",
+    "@mem7ai/mem7": "^0.3.3"
   }
 }

@@ -23,7 +23,7 @@ class MockDurableObjectState {
 }
 
 class MockD1Database {
-  private tables = new Map<string, any[]>();
+  tables = new Map<string, any[]>();
 
   prepare(sql: string) {
     return new MockPreparedStatement(this, sql);
@@ -173,11 +173,6 @@ class MockPreparedStatement {
 
     return { results: [] };
   }
-
-  bind(...params: any[]) {
-    this.params = params;
-    return this;
-  }
 }
 
 // Helper to create test entries
@@ -257,7 +252,7 @@ describe('L2EpisodicChain Reference Implementation', () => {
     const overflow = chain.append(createTestEntry({ id: 'd', createdAt: 4000 }));
 
     expect(overflow.length).toBeGreaterThan(0);
-    expect(overflow[0].entry.id).toBe('a');
+    expect(overflow[0]!.entry.id).toBe('a');
   });
 
   it('should protect pinned entries from eviction', () => {
