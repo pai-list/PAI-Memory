@@ -91,7 +91,7 @@ jobs:
       - name: Run OSV Scanner
         uses: google/osv-scanner@v1
         with:
-          args: --format=json --output=osv-results.json .
+          args: --format=json --output=osv-results.json --config=/github/workspace/osv-scanner.toml .
       - name: Upload OSV Results
         uses: actions/upload-artifact@v4
         with:
