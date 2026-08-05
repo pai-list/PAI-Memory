@@ -83,10 +83,10 @@ export interface ConflictStats {
  * JSON-serialized value, guaranteeing deterministic outcomes regardless of
  * insertion order or platform.
  *
- * Integration with mem7:
- *   Use ConflictResolver.track() alongside mem7's store to record fact
+ * Integration:
+ *   Use ConflictResolver.track() alongside the store to record fact
  *   timestamps. On recall, pass conflicting candidates to resolve() before
- *   returning to the caller. This avoids mem7's LLM-based dedup for
+ *   returning to the caller. This avoids LLM-based dedup for
  *   timestamp-resolvable conflicts.
  */
 export class ConflictResolver {

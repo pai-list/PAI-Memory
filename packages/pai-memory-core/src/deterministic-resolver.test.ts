@@ -324,10 +324,10 @@ describe("ConflictResolver: track + resolve integration", () => {
     expect(winner.value).toBe("Rust"); // tracked fact has max timestamp
   });
 
-  it("simulates mem7 recall + conflict resolution flow", () => {
+  it("simulates recall + conflict resolution flow", () => {
     const r = new ConflictResolver();
 
-    // Phase 1: track facts as they're stored via mem7
+    // Phase 1: track facts as they're stored
     r.track("alice:sport", "tennis", 1000);
     r.track("alice:sport", "football", 3000);
 

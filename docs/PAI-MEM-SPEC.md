@@ -46,7 +46,7 @@ Two load-bearing beliefs from this research cycle:
 ① silent conflicts, ② poisoned ingest, ③ over-retention, ④ cross-layer coherence collapse,
 ⑤ token-cost blowups from unbounded recall, ⑥ vendor lock-in, ⑦ "the LLM decides freshness".
 
-Our two differentiators over mem7 & Mem0 (see §9):
+Our two differentiators over the field of third-party memory engines (Mem0 etc., see §9):
 
 - **Topology-native** — we write and lift/refresh *typed temporal edges*, not just vectors.
 - **A clock, not a judge** — valid-time + transaction-time on every node; resolution-by-arithmetic.
@@ -216,23 +216,23 @@ edge.sync                                — §5.5, §9 L6
 
 ---
 
-## 9. mem7: Relationship & Divergence (study, do not fork)
+## 9. External Engines: Relationship & Divergence (study, do not fork)
 
-mem7 is the best-known 2025-26 vertical long-term extractor (Rust core; Ebbinghaus; typed
-factual/preference/procedural/episodic; FlatIndex; session-aware recall; audit history). We
-study it closely and deliberately **do not fork or re-implement its Rust internals**, but our
-product goes beyond it on four axes:
+Existing memory engines (e.g. Mem0/Zep/Letta) are useful references for the 2025-26 vertical
+long-term-extractor space (Rust cores; Ebbinghaus decay; typed factual/preference/procedural/
+episodic items; FlatIndex; session-aware recall; audit history). We study them closely and
+deliberately **do not fork or re-implement any of their internals**, but our product goes
+beyond them on four axes:
 
-| Axis | mem7 | PAI-MEM |
-|------|------|---------|
+| Axis | External engines | PAI-MEM |
+|------|------------------|---------|
 | Structure | single volume of typed memories | 7 lifecycle layers w/ topology + validity edges |
 | Freshness | decay-only (recency proxy) | bitemporal + serial arithmetic (deterministic conflict) |
 | Admission | none (LLM-decided) | SAGE-class write-gate + trust-gate on read |
 | Memory edit | overwrite-ish dedup | supersede-with-audit + surfacing |
 
-If we adopt any mem7 algorithm (decay curve, task-type mapping), we will **re-derive the math
+If we adopt any external algorithm (decay curve, task-type mapping), we will **re-derive the math
 ourselves from the citations** with our own calibration and our own tests — never copy-and-paste.
-A `docs/mem7-divergence.md` will capture the exact diff.
 
 ---
 
@@ -281,7 +281,7 @@ A `docs/mem7-divergence.md` will capture the exact diff.
 | P1 | trust-gate: novelty + policy on write + read-bias detector | core |
 | P2 | L6 gossip / energy / multi-tenant edges §9 | edge |
 | P3 | L4 code-bag + L7 archive (int8 → Parquet) | core |
-| P4 | mem7 divergence doc + calib-rate adoption; benchmark vs Mem0/Zep/Letta | eng |
+| P4 | calib-rate adoption + benchmark vs Mem0/Zep/Letta | eng |
 | P5 | edit/forget → micro-audits for users; TrustChain receipts (Sigstore/Rekor) | eng |
 
 Benchmarks planned: MemoryAgentBench (4 competencies), LongMemEval, LoCoMo, FactConsolidation,
