@@ -4,6 +4,12 @@
   "main": "src/l2-do-entry.ts",
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
+  "routes": [
+    {
+      "pattern": "memory.axiomid.app/*",
+      "zone_name": "axiomid.app"
+    }
+  ],
   "vars": {
     "L2_SOFT_BUDGET_MB": "1",
     "L2_HARD_CEILING_MB": "10"
