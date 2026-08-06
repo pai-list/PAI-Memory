@@ -1,78 +1,78 @@
 {
   "name": "@pai/memory",
-  "version": "0.1.0",
   "description": "7-layer agent memory. Persistent. Verifiable. Shared.",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.1.0",
+  "author": "Mohamed Abdelaziz <momtaz2727@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/pai-list/PAI-Memory/issues"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^5.20260724.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260724.1",
+    "@types/node": "^26",
+    "@typescript-eslint/eslint-plugin": "^8.7.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vitest/coverage-v8": "^2.1.1",
+    "eslint": "^9",
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.19.0",
+    "typedoc": "^0.27.0",
+    "typescript": "^5",
+    "vitest": "^4.0.17",
+    "wrangler": "^4.113.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./layers": {
-      "import": "./dist/layers/index.js",
-      "types": "./dist/layers/index.d.ts"
+      "types": "./dist/layers/index.d.ts",
+      "import": "./dist/layers/index.js"
     },
     "./core": {
-      "import": "./dist/core/index.js",
-      "types": "./dist/core/index.d.ts"
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
     },
     "./integration": {
-      "import": "./dist/integration/index.js",
-      "types": "./dist/integration/index.d.ts"
+      "types": "./dist/integration/index.d.ts",
+      "import": "./dist/integration/index.js"
     }
   },
-  "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "build": "tsc && tsc-alias",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "docs": "typedoc --out docs/api src"
-  },
+  "homepage": "https://github.com/pai-list/PAI-Memory#readme",
   "keywords": [
-    "memory",
     "agent",
-    "vector",
+    "memory",
+    "parquet",
+    "r2",
     "sqlite-vec",
     "trust-chain",
-    "r2",
-    "parquet"
+    "vector"
   ],
-  "author": "Mohamed Abdelaziz <momtaz2727@gmail.com>",
   "license": "MIT",
+  "main": "dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/pai-list/PAI-Memory"
   },
-  "bugs": {
-    "url": "https://github.com/pai-list/PAI-Memory/issues"
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "docs": "typedoc --out docs/api src",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
-  "homepage": "https://github.com/pai-list/PAI-Memory#readme",
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "dependencies": {
-    "zod": "^3.23.8",
-    "@cloudflare/workers-types": "^5.20260722.1"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260722.1",
-    "@types/node": "^22.7.0",
-    "typescript": "^5.7.0",
-    "tsc-alias": "^1.8.10",
-    "wrangler": "^4.113.0",
-    "vitest": "^2.1.1",
-    "@vitest/coverage-v8": "^2.1.1",
-    "eslint": "^9.11.0",
-    "@typescript-eslint/eslint-plugin": "^8.7.0",
-    "@typescript-eslint/parser": "^8.7.0",
-    "tsx": "^4.19.0",
-    "typedoc": "^0.27.0"
-  }
+  "type": "module",
+  "types": "dist/index.d.ts"
 }
