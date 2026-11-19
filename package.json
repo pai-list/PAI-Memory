@@ -21,7 +21,7 @@
     "tsx": "^4.19.0",
     "typedoc": "^0.27.0",
     "typescript": "^5",
-    "vitest": "^4.0.17",
+    "vitest": "^2.0.0",
     "wrangler": "^4.113.0"
   },
   "engines": {
